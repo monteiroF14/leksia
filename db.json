@@ -1,1 +1,13 @@
-[]
+{
+  "users": [
+    {
+      "id": "64d8",
+      "githubId": 119819402,
+      "username": "monteiroF14",
+      "email": "monteiroF14@github.com",
+      "avatarUrl": "https://avatars.githubusercontent.com/u/119819402?v=4",
+      "sessionToken": "S9LKYUNUiTtwE0PHw5zPPLOricfz9hfY9ZBtWEp9ga5Yo5bHjlxnNKhAunIYtP9H"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}

@@ -1,13 +1,192 @@
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>leksia</title>
-	</head>
-	<body>
-		<h1>Leksia</h1>
-	</body>
-</html>
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout>
+  <div class="max-w-7xl mx-auto"> 
+    <h1 class="text-4xl font-bold text-gray-900 mb-8">frase explicativa sobre a app e dislexia</h1>
+    
+    <div class="rounded-xl mb-8">
+      <label for="wiki-url" class="block text-sm font-semibold text-gray-700 mb-2">
+        Enter Wikipedia URL
+      </label>
+      <div class="flex gap-3">
+        <input
+          type="text"
+          id="wiki-url"
+          placeholder="https://en.wikipedia.org/wiki/..."
+          class="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 outline-none transition bg-gray-50"
+        />
+        <button
+          id="fetch-btn"
+          class="p-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </button>
+      </div>
+      <p id="error-msg" class="mt-2 text-sm text-red-600 hidden"></p>
+    </div>
+
+    <div id="loading" class="hidden flex justify-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-600 border-t-transparent"></div>
+    </div>
+
+    <div id="wiki-content" class="hidden">
+      <div class="rounded-xl overflow-hidden">
+        <div class="px-8 py-6">
+          <h2 id="wiki-title" class="text-3xl font-bold underline"></h2>
+          <p id="wiki-description" class="text-gray-300 mt-2 text-sm"></p>
+        </div>
+        <div id="wiki-body" class="p-8 prose prose-gray max-w-none"></div>
+      </div>
+      
+      <div id="wiki-infobox" class="hidden bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 mt-6">
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+          <h3 id="infobox-title" class="text-lg font-bold text-gray-900"></h3>
+        </div>
+        <div id="infobox-content" class="p-6"></div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  const input = document.getElementById('wiki-url') as HTMLInputElement;
+  const btn = document.getElementById('fetch-btn') as HTMLButtonElement;
+  const content = document.getElementById('wiki-content');
+  const title = document.getElementById('wiki-title');
+  const description = document.getElementById('wiki-description');
+  const body = document.getElementById('wiki-body');
+  const infobox = document.getElementById('wiki-infobox');
+  const infoboxTitle = document.getElementById('infobox-title');
+  const infoboxContent = document.getElementById('infobox-content');
+  const error = document.getElementById('error-msg');
+  const loading = document.getElementById('loading');
+
+  function isWikipediaUrl(url: string) {
+    return url.match(/^https?:\/\/([a-z]{2}\.)?wikipedia\.org\/wiki\/.+/i);
+  }
+
+  function extractPageTitle(url: string): string {
+    const match = url.match(/wikipedia\.org\/wiki\/([^?#]+)/i);
+    if (match) {
+      return decodeURIComponent(match[1].replace(/_/g, ' '));
+    }
+    return '';
+  }
+
+  function extractLanguage(url: string): string {
+    const match = url.match(/^https?:\/\/([a-z]{2})\./i);
+    return match ? match[1] : 'en';
+  }
+
+  function cleanHTML(html: string): string {
+    return html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+               .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+               .replace(/onclick="[^"]*"/gi, '')
+               .replace(/onload="[^"]*"/gi, '');
+  }
+
+  async function fetchWikiContent() {
+    const url = input.value.trim();
+    
+    if (!url) {
+      showError('Please enter a URL');
+      return;
+    }
+
+    if (!isWikipediaUrl(url)) {
+      showError('Please enter a valid Wikipedia URL');
+      return;
+    }
+
+    const pageTitle = extractPageTitle(url);
+    const lang = extractLanguage(url);
+    
+    if (!pageTitle) {
+      showError('Could not extract page title from URL');
+      return;
+    }
+
+    hideError();
+    content?.classList.add('hidden');
+    loading?.classList.remove('hidden');
+    btn.disabled = true;
+
+    try {
+      const apiUrl = `/api/wiki?title=${encodeURIComponent(pageTitle)}&lang=${lang}`;
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        throw new Error('Page not found');
+      }
+
+      const data = await response.json();
+      
+      if (title) title.textContent = data.parse?.title || pageTitle;
+      if (description) description.textContent = '';
+      
+      if (body) {
+        const html = data.parse?.text?.['*'] || '';
+        body.innerHTML = html;
+        
+        body.querySelectorAll('sup, .reference, .references, .reflist, .reference-list, .cite, .reference-icon, .footnote, .footnotes, .noprint, .mw-editsection, .catlinks, .printfooter, .navbox, .sidebar, .infobox, .vertical-navbox, .navbox-group, .sistersitebox, .mw-empty-elt, img, .thumb, .gallery, .mw-file-element, table:not(.wikitable)').forEach(el => el.remove());
+        body.querySelectorAll('table').forEach(table => {
+          if (!table.classList.contains('wikitable')) {
+            table.remove();
+          }
+        });
+        body.querySelectorAll('a').forEach(a => {
+          const href = a.getAttribute('href') || '';
+          if (href.startsWith('#') || href.includes('cite')) {
+            a.remove();
+          } else {
+            a.setAttribute('target', '_blank');
+            a.setAttribute('rel', 'noopener noreferrer');
+            a.classList.add('text-gray-700', 'hover:underline');
+          }
+        });
+        body.querySelectorAll('table').forEach(table => {
+          table.classList.add('w-full', 'border-collapse', 'my-4');
+          table.querySelectorAll('th, td').forEach(cell => {
+            cell.classList.add('border', 'border-gray-300', 'px-3', 'py-2');
+          });
+        });
+        body.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(h => {
+          h.classList.add('text-gray-900', 'font-bold', 'mt-6', 'mb-3');
+        });
+        body.querySelectorAll('p').forEach(p => {
+          p.classList.add('mb-4');
+        });
+      }
+      
+      content?.classList.remove('hidden');
+    } catch (err) {
+      console.error(err);
+      showError('Failed to fetch Wikipedia content. Please check the URL.');
+    } finally {
+      loading?.classList.add('hidden');
+      btn.disabled = false;
+    }
+  }
+
+  function showError(msg: string) {
+    if (error) {
+      error.textContent = msg;
+      error.classList.remove('hidden');
+    }
+  }
+
+  function hideError() {
+    if (error) {
+      error.classList.add('hidden');
+    }
+  }
+
+  btn?.addEventListener('click', fetchWikiContent);
+  input?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') fetchWikiContent();
+  });
+</script>

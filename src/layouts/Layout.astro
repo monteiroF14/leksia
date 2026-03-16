@@ -1,0 +1,42 @@
+---
+import '../styles/global.css';
+import Header from '../components/header/Header.astro';
+
+interface Props {
+  title?: string;
+}
+
+const { title = 'Leksia' } = Astro.props;
+
+let user = null;
+const sessionToken = Astro.cookies.get('session_token')?.value;
+if (sessionToken) {
+  try {
+    const response = await fetch(`http://localhost:3000/users?sessionToken=${sessionToken}`);
+    const users = await response.json();
+    if (users.length > 0) {
+      user = {
+        username: users[0].username,
+        avatarUrl: users[0].avatarUrl
+      };
+    }
+  } catch (e) {
+    console.error('Failed to fetch user:', e);
+  }
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+  </head>
+  <body class="bg-gray-50 min-h-screen">
+    <Header user={user} />
+    <main class="sm:px-6 lg:px-8 py-8">
+      <slot />
+    </main>
+  </body>
+</html>

@@ -1,0 +1,38 @@
+---
+import { Github } from 'lucide-astro';
+
+interface Props {
+  user?: {
+    username: string;
+    avatarUrl: string;
+  } | null;
+}
+
+const { user } = Astro.props;
+---
+
+<header class="py-2">
+  <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-16">
+      <a href="/" class="text-2xl font-bold text-gray-900">leksia</a>
+      {user ? (
+        <div class="flex items-center gap-3">
+          <span class="text-sm font-medium text-gray-700">{user.username}</span>
+          <img 
+            src={user.avatarUrl} 
+            alt={user.username}
+            class="w-8 h-8 rounded-full"
+          />
+        </div>
+      ) : (
+        <a
+          href="/auth"
+          class="flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-colors text-base font-medium"
+        >
+          <Github size={20} />
+          Login with GitHub
+        </a>
+      )}
+    </div>
+  </nav>
+</header>
