@@ -146,8 +146,6 @@ import Layout from '@/layouts/Layout.astro';
   const speechOutput = document.getElementById('speech-output');
   const speechText = document.getElementById('speech-text');
 
-  console.log('Script loaded');
-
   let speechRecognition = null;
   const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (SpeechRecognitionAPI) {
