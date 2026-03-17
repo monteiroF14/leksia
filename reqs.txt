@@ -1,9 +1,0 @@
-- astro 
-- vite
-- json-server
-
-- a user should be able to create account
-- a user should be able to login
-- a user should be able to load a pdf or a wikipedia url
-- a user should be able to speak to the app via speech api
-- there should be gamification
